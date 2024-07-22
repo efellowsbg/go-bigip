@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/f5devcentral/go-bigip"
+	"github.com/efellowsbg/go-bigip"
 )
 
 func main() {

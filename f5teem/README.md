@@ -9,7 +9,7 @@ package main
 
 import (
 	//"github.com/RavinderReddyF5/f5-teem"
-	"github.com/f5devcentral/go-bigip/f5teem"
+	"github.com/efellowsbg/go-bigip/f5teem"
 	"log"
 )
 
