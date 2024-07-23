@@ -1,6 +1,13 @@
 package bigip
 
-import "fmt"
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 type ILXWorkspace struct {
 	Name            string      `json:"name,omitempty"`
@@ -33,4 +40,121 @@ func (b *BigIP) GetWorkspace(name string) (*ILXWorkspace, error) {
 		return nil, fmt.Errorf("error getting ILX Workspace: %w", err)
 	}
 	return spc, nil
+}
+
+func (b *BigIP) CreateWorkspace(name string) error {
+	err := b.post(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, "")
+	if err != nil {
+		return fmt.Errorf("error creating ILX Workspace: %w", err)
+	}
+	return nil
+}
+
+func (b *BigIP) DeleteWorkspace(name string) error {
+	err := b.delete(uriMgmt, uriTm, uriIlx, uriWorkspace, name)
+	if err != nil {
+		return fmt.Errorf("error deleting ILX Workspace: %w", err)
+	}
+	return nil
+}
+func (b *BigIP) PatchWorkspace(name string) error {
+	err := b.patch(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, name)
+	if err != nil {
+		return fmt.Errorf("error patching ILX Workspace: %w", err)
+	}
+
+	return nil
+}
+
+type ExtensionConfig struct {
+	Name          string `json:"name,omitempty"`
+	Partition     string `json:"partition,omitempty"`
+	WorkspaceName string `json:"workspaceName,omitempty"`
+}
+
+func (b *BigIP) CreateExtension(opts ExtensionConfig) error {
+	err := b.post(ILXWorkspace{Name: opts.WorkspaceName}, uriMgmt, uriTm, uriIlx, uriWorkspace+"?options=extension,"+opts.Name)
+	if err != nil {
+		return fmt.Errorf("error creating ILX Extension: %w", err)
+	}
+
+	return nil
+}
+
+// UploadExtensionFiles uploads the files in the given directory to the BIG-IP system
+// Only index.js and package.json files are uploaded as they are the only mutable files.
+func (b *BigIP) UploadExtensionFiles(opts ExtensionConfig, path string) error {
+	destination := fmt.Sprintf("%s/%s/%s/extensions/%s/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName, opts.Name)
+	files, err := readFilesFromDirectory(path)
+	if err != nil {
+		return err
+	}
+
+	uploadedFilePaths, err := b.uploadFiles(files, path)
+	if err != nil {
+		return err
+	}
+
+	for _, uploadedFilePath := range uploadedFilePaths {
+		err := b.runCatCommand(uploadedFilePath, destination)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readFilesFromDirectory(path string) ([]os.DirEntry, error) {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading directory: %w", err)
+	}
+	return files, nil
+}
+
+func (b *BigIP) uploadFiles(files []os.DirEntry, path string) ([]string, error) {
+	uploadedFilePaths := []string{}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if file.Name() == "index.js" || file.Name() == "package.json" {
+			fileObject, err := fileFromDirEntry(file, path)
+			if err != nil {
+				return nil, fmt.Errorf("error getting file from directory entry: %w", err)
+			}
+			res, err := b.UploadFile(fileObject)
+			if err != nil {
+				return nil, fmt.Errorf("error uploading file: %w", err)
+			}
+			uploadedFilePaths = append(uploadedFilePaths, res.LocalFilePath)
+		}
+	}
+	return uploadedFilePaths, nil
+}
+
+func (b *BigIP) runCatCommand(uploadedFilePath, destination string) error {
+	fileName := filepath.Base(uploadedFilePath)
+	command := BigipCommand{
+		Command:     "run",
+		UtilCmdArgs: fmt.Sprintf("-c 'cat %s > %s'", uploadedFilePath, destination+fileName),
+	}
+	output, err := b.RunCommand(&command)
+	if err != nil {
+		return fmt.Errorf("error running command: %w", err)
+	}
+	spew.Dump(output)
+	return nil
+}
+
+func fileFromDirEntry(entry fs.DirEntry, dir string) (*os.File, error) {
+	path := filepath.Join(dir, entry.Name())
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }

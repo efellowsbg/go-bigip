@@ -1,9 +1,9 @@
 package main
 
 import (
+	"log"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/efellowsbg/go-bigip"
 )
 
@@ -17,9 +17,28 @@ func main() {
 	}
 
 	f5 := bigip.NewSession(&config)
-	result, err := f5.GetWorkspace("sso")
+
+	const wrkspcName = "exampleWorkspace"
+	err := f5.CreateWorkspace(wrkspcName)
 	if err != nil {
 		panic(err)
 	}
-	spew.Dump(result)
+	result, err := f5.GetWorkspace(wrkspcName)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Workspace: %v", result)
+	opts := bigip.ExtensionConfig{
+		WorkspaceName: wrkspcName,
+		Name:          "exampleExt",
+		Partition:     "Common",
+	}
+	err = f5.CreateExtension(opts)
+	if err != nil {
+		panic(err)
+	}
+	err = f5.UploadExtensionFiles(opts, "./ilx_example/ilx")
+	if err != nil {
+		panic(err)
+	}
 }
