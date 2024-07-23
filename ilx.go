@@ -89,42 +89,55 @@ func (b *BigIP) UploadExtensionFiles(opts ExtensionConfig, path string) error {
 	if err != nil {
 		return err
 	}
+	return b.uploadFilesToDestination(files, destination)
+}
 
-	uploadedFilePaths, err := b.uploadFiles(files, path)
+func (b *BigIP) UploadRuleFiles(opts ExtensionConfig, path string) error {
+	destination := fmt.Sprintf("%s/%s/%s/rules/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName)
+	files, err := readFilesFromDirectory(path)
 	if err != nil {
 		return err
 	}
-
+	return b.uploadFilesToDestination(files, destination)
+}
+func (b *BigIP) uploadFilesToDestination(files []*os.File, destination string) error {
+	uploadedFilePaths, err := b.uploadFiles(files)
+	if err != nil {
+		return err
+	}
 	for _, uploadedFilePath := range uploadedFilePaths {
 		err := b.runCatCommand(uploadedFilePath, destination)
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func readFilesFromDirectory(path string) ([]os.DirEntry, error) {
-	files, err := os.ReadDir(path)
+func readFilesFromDirectory(path string) ([]*os.File, error) {
+	fileDirs, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory: %w", err)
+	}
+	files := []*os.File{}
+	for _, fileDir := range fileDirs {
+		if fileDir.IsDir() {
+			continue
+		}
+		f, err := fileFromDirEntry(fileDir, path)
+		if err != nil {
+			return nil, fmt.Errorf("error getting file from directory entry: %w", err)
+		}
+		files = append(files, f)
 	}
 	return files, nil
 }
 
-func (b *BigIP) uploadFiles(files []os.DirEntry, path string) ([]string, error) {
+func (b *BigIP) uploadFiles(files []*os.File) ([]string, error) {
 	uploadedFilePaths := []string{}
 	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
 		if file.Name() == "index.js" || file.Name() == "package.json" {
-			fileObject, err := fileFromDirEntry(file, path)
-			if err != nil {
-				return nil, fmt.Errorf("error getting file from directory entry: %w", err)
-			}
-			res, err := b.UploadFile(fileObject)
+			res, err := b.UploadFile(file)
 			if err != nil {
 				return nil, fmt.Errorf("error uploading file: %w", err)
 			}

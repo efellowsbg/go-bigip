@@ -18,7 +18,7 @@ func main() {
 
 	f5 := bigip.NewSession(&config)
 
-	const wrkspcName = "exampleWorkspace"
+	const wrkspcName = "exampleWorspace"
 	err := f5.CreateWorkspace(wrkspcName)
 	if err != nil {
 		panic(err)

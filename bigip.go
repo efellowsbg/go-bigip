@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -408,7 +407,6 @@ func (b *BigIP) post(body interface{}, path ...string) error {
 		Body:        strings.TrimRight(string(marshalJSON), "\n"),
 		ContentType: "application/json",
 	}
-	log.Println(req.URL)
 	_, callErr := b.APICall(req)
 	return callErr
 }
