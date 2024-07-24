@@ -1,6 +1,7 @@
 package bigip
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -30,39 +31,60 @@ type Extension struct {
 	Files []File `json:"files,omitempty"`
 }
 
-func (b *BigIP) GetWorkspace(name string) (*ILXWorkspace, error) {
+func (b *BigIP) GetWorkspace(ctx context.Context, path string) (*ILXWorkspace, error) {
 	spc := &ILXWorkspace{}
-	err, exists := b.getForEntity(spc, uriMgmt, uriTm, uriIlx, uriWorkspace, name)
-	if !exists {
-		return nil, fmt.Errorf("workspace does not exist: %w", err)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		err, exists := b.getForEntity(spc, uriMgmt, uriTm, uriIlx, uriWorkspace, path)
+		if !exists {
+			return nil, fmt.Errorf("workspace does not exist: %w", err)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error getting ILX Workspace: %w", err)
+		}
 	}
-	if err != nil {
-		return nil, fmt.Errorf("error getting ILX Workspace: %w", err)
-	}
+
 	return spc, nil
 }
 
-func (b *BigIP) CreateWorkspace(name string) error {
-	err := b.post(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, "")
-	if err != nil {
-		return fmt.Errorf("error creating ILX Workspace: %w", err)
+func (b *BigIP) CreateWorkspace(ctx context.Context, path string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		err := b.post(ILXWorkspace{Name: path}, uriMgmt, uriTm, uriIlx, uriWorkspace, "")
+		if err != nil {
+			return fmt.Errorf("error creating ILX Workspace: %w", err)
+		}
 	}
+
 	return nil
 }
 
-func (b *BigIP) DeleteWorkspace(name string) error {
-	err := b.delete(uriMgmt, uriTm, uriIlx, uriWorkspace, name)
-	if err != nil {
-		return fmt.Errorf("error deleting ILX Workspace: %w", err)
+func (b *BigIP) DeleteWorkspace(ctx context.Context, name string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		err := b.delete(uriMgmt, uriTm, uriIlx, uriWorkspace, name)
+		if err != nil {
+			return fmt.Errorf("error deleting ILX Workspace: %w", err)
+		}
 	}
 	return nil
 }
-func (b *BigIP) PatchWorkspace(name string) error {
-	err := b.patch(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, name)
-	if err != nil {
-		return fmt.Errorf("error patching ILX Workspace: %w", err)
+func (b *BigIP) PatchWorkspace(ctx context.Context, name string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		err := b.patch(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, name)
+		if err != nil {
+			return fmt.Errorf("error patching ILX Workspace: %w", err)
+		}
 	}
-
 	return nil
 }
 
@@ -72,33 +94,54 @@ type ExtensionConfig struct {
 	WorkspaceName string `json:"workspaceName,omitempty"`
 }
 
-func (b *BigIP) CreateExtension(opts ExtensionConfig) error {
-	err := b.post(ILXWorkspace{Name: opts.WorkspaceName}, uriMgmt, uriTm, uriIlx, uriWorkspace+"?options=extension,"+opts.Name)
-	if err != nil {
-		return fmt.Errorf("error creating ILX Extension: %w", err)
+func (b *BigIP) CreateExtension(ctx context.Context, opts ExtensionConfig) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		err := b.post(ILXWorkspace{Name: opts.WorkspaceName}, uriMgmt, uriTm, uriIlx, uriWorkspace+"?options=extension,"+opts.Name)
+		if err != nil {
+			return fmt.Errorf("error creating ILX Extension: %w", err)
+		}
 	}
-
 	return nil
 }
 
 // UploadExtensionFiles uploads the files in the given directory to the BIG-IP system
 // Only index.js and package.json files are uploaded as they are the only mutable files.
-func (b *BigIP) UploadExtensionFiles(opts ExtensionConfig, path string) error {
-	destination := fmt.Sprintf("%s/%s/%s/extensions/%s/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName, opts.Name)
-	files, err := readFilesFromDirectory(path)
-	if err != nil {
-		return err
+func (b *BigIP) UploadExtensionFiles(ctx context.Context, opts ExtensionConfig, path string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		destination := fmt.Sprintf("%s/%s/%s/extensions/%s/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName, opts.Name)
+		files, err := readFilesFromDirectory(path)
+		if err != nil {
+			return err
+		}
+		err = b.uploadFilesToDestination(files, destination)
+		if err != nil {
+			return err
+		}
 	}
-	return b.uploadFilesToDestination(files, destination)
+	return nil
 }
 
-func (b *BigIP) UploadRuleFiles(opts ExtensionConfig, path string) error {
-	destination := fmt.Sprintf("%s/%s/%s/rules/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName)
-	files, err := readFilesFromDirectory(path)
-	if err != nil {
-		return err
+func (b *BigIP) UploadRuleFiles(ctx context.Context, opts ExtensionConfig, path string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		destination := fmt.Sprintf("%s/%s/%s/rules/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName)
+		files, err := readFilesFromDirectory(path)
+		if err != nil {
+			return err
+		}
+		if err = b.uploadFilesToDestination(files, destination); err != nil {
+			return err
+		}
 	}
-	return b.uploadFilesToDestination(files, destination)
+	return nil
 }
 func (b *BigIP) uploadFilesToDestination(files []*os.File, destination string) error {
 	uploadedFilePaths, err := b.uploadFiles(files)

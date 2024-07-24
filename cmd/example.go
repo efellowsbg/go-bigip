@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/efellowsbg/go-bigip"
 )
@@ -18,12 +20,14 @@ func main() {
 
 	f5 := bigip.NewSession(&config)
 
-	const wrkspcName = "exampleWorspace"
-	err := f5.CreateWorkspace(wrkspcName)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	const wrkspcName = "exampleWok"
+	err := f5.CreateWorkspace(ctx, wrkspcName)
 	if err != nil {
 		panic(err)
 	}
-	result, err := f5.GetWorkspace(wrkspcName)
+	result, err := f5.GetWorkspace(ctx, wrkspcName)
 	if err != nil {
 		panic(err)
 	}
@@ -33,11 +37,11 @@ func main() {
 		Name:          "exampleExt",
 		Partition:     "Common",
 	}
-	err = f5.CreateExtension(opts)
+	err = f5.CreateExtension(ctx, opts)
 	if err != nil {
 		panic(err)
 	}
-	err = f5.UploadExtensionFiles(opts, "./ilx_example/ilx")
+	err = f5.UploadExtensionFiles(ctx, opts, "./ilx_example/ilx")
 	if err != nil {
 		panic(err)
 	}
