@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/efellowsbg/go-bigip"
 )
 
@@ -22,7 +23,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	const wrkspcName = "exampleWok"
+	const wrkspcName = "exampleWorkspace"
 	err := f5.CreateWorkspace(ctx, wrkspcName)
 	if err != nil {
 		panic(err)
@@ -41,8 +42,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = f5.UploadExtensionFiles(ctx, opts, "./ilx_example/ilx")
+	err = f5.UploadExtensionFiles(ctx, opts, "cmd/ilx_example/ilx")
 	if err != nil {
 		panic(err)
 	}
+	content, err := f5.ReadExtensionFiles(ctx, opts)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(content)
 }
