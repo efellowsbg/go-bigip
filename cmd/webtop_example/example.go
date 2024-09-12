@@ -26,9 +26,9 @@ func main() {
 
 	conf := bigip.WebtopConfig{
 		Description:        "Call me",
-		Type:               bigip.Full,
+		Type:               bigip.WebtopTypePortal,
 		LinkType:           bigip.LinkTypeUri,
-		CustomizationType:  bigip.Modern,
+		CustomizationType:  bigip.CustomizationTypeModern,
 		CustomizationGroup: "/Common/webtop_customization",
 		LocationSpecific:   false,
 		MinimizeToTray:     true,
@@ -36,6 +36,7 @@ func main() {
 		WarningOnClose:     false,
 		UrlEntryField:      true,
 		ResourceSearch:     false,
+		InitialState:       bigip.InitialStateCollapsed,
 	}
 	webtop := bigip.Webtop{
 		Name:         "ExampleName",

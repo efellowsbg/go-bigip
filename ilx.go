@@ -61,14 +61,6 @@ func (b *BigIP) DeleteWorkspace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (b *BigIP) PatchWorkspace(ctx context.Context, name string) error {
-	err := b.patch(ILXWorkspace{Name: name}, uriMgmt, uriTm, uriIlx, uriWorkspace, name)
-	if err != nil {
-		return fmt.Errorf("error patching ILX Workspace: %w", err)
-	}
-	return nil
-}
-
 type ExtensionConfig struct {
 	Name          string `json:"name,omitempty"`
 	Partition     string `json:"partition,omitempty"`

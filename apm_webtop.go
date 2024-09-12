@@ -13,19 +13,19 @@ type (
 )
 
 const (
-	Portal  WebtopType = "portal-access"
-	Full               = "full"
-	Network            = "network-access"
+	WebtopTypePortal  WebtopType = "portal-access"
+	WebtopTypeFull               = "full"
+	WebtopTypeNetwork            = "network-access"
 )
 
 const (
-	Modern   CustomizationType = "Modern"
-	Standard                   = "Standard"
+	CustomizationTypeModern   CustomizationType = "Modern"
+	CustomizationTypeStandard                   = "Standard"
 )
 
 const (
-	Collapsed InitialState = "Collapsed"
-	Expanded               = "Expanded"
+	InitialStateCollapsed InitialState = "Collapsed"
+	InitialStateExpanded               = "Expanded"
 )
 
 const (
