@@ -109,7 +109,7 @@ func (b *BigIP) GetWebtop(ctx context.Context, name string) (*WebtopRead, error)
 	return &webtop, err
 }
 
-func (b *BigIP) ModifyWebtop(ctx context.Context, name string, webtop Webtop) error {
+func (b *BigIP) ModifyWebtop(ctx context.Context, name string, webtop WebtopConfig) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
