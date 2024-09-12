@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strconv"
 
 	//"strings"
@@ -1106,7 +1107,7 @@ func (b *BigIP) ModifyFolderDescription(partition string, body map[string]string
 func (b *BigIP) WriteFile(content string, destination string) error {
 	cmd := BigipCommand{
 		Command:     "run",
-		UtilCmdArgs: fmt.Sprintf("-c 'echo %s > %s'", content, destination),
+		UtilCmdArgs: fmt.Sprintf("-c 'echo \"%s\" > \"%s\"'", content, destination),
 	}
 	out, err := b.RunCommand(&cmd)
 	if err != nil {
@@ -1114,4 +1115,21 @@ func (b *BigIP) WriteFile(content string, destination string) error {
 	}
 	spew.Dump(out)
 	return nil
+}
+
+// Read a file using the cat command
+func (b *BigIP) ReadFile(destination string) (*ILXFile, error) {
+	fileContentCommand := BigipCommand{
+		Command:     "run",
+		UtilCmdArgs: fmt.Sprintf("-c 'cat %s'", destination),
+	}
+	fileContent, err := b.RunCommand(&fileContentCommand)
+	if err != nil {
+		return nil, fmt.Errorf("error running command: %w", err)
+	}
+	file := &ILXFile{
+		Name:    path.Base(destination),
+		Content: fileContent.CommandResult,
+	}
+	return file, nil
 }

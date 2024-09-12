@@ -23,7 +23,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	const wrkspcName = "sdsss"
+	const wrkspcName = "sasdsdfdsdf"
 	err := f5.CreateWorkspace(ctx, wrkspcName)
 	if err != nil {
 		panic(err)
@@ -48,12 +48,12 @@ func main() {
 		panic(err)
 	}
 
-	err = f5.WriteExtensionFile(ctx, opts, "const a=1;", bigip.IndexJS)
+	err = f5.WriteExtensionFile(ctx, opts, "const ;a=1dskafljs", bigip.IndexJS)
 	if err != nil {
 		panic(err)
 	}
 
-	content, err := f5.ReadExtensionFiles(ctx, opts)
+	content, err := f5.ReadExtensionFile(ctx, opts, bigip.IndexJS)
 	if err != nil {
 		panic(err)
 	}
