@@ -13,19 +13,28 @@ type (
 )
 
 const (
-	Portal      WebtopType        = "portal-access"
-	Full        WebtopType        = "full"
-	Network     WebtopType        = "network-access"
-	Modern      CustomizationType = "Modern"
-	Standard    CustomizationType = "Standard"
-	Collapsed   InitialState      = "Collapsed"
-	Expanded    InitialState      = "Expanded"
-	LinkTypeUri LinkType          = "uri"
+	Portal  WebtopType = "portal-access"
+	Full               = "full"
+	Network            = "network-access"
 )
 
-type BooledString bool
+const (
+	Modern   CustomizationType = "Modern"
+	Standard                   = "Standard"
+)
+
+const (
+	Collapsed InitialState = "Collapsed"
+	Expanded               = "Expanded"
+)
+
+const (
+	LinkTypeUri LinkType = "uri"
+)
 
 // Some endpoints have a "booledString" a boolean value that is represented as a string in the json payload
+type BooledString bool
+
 func (b BooledString) MarshalJSON() ([]byte, error) {
 	str := "false"
 	if b {
@@ -43,22 +52,28 @@ func (b BooledString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Webtop struct {
-	Name               string            `json:"name,omitempty"`
-	Partition          string            `json:"partition,omitempty"`
+// Values in WebtopConfig are updateable
+type WebtopConfig struct {
 	Description        string            `json:"description,omitempty"`
-	Type               WebtopType        `json:"webtopType,omitempty"`
 	LinkType           LinkType          `json:"linkType,omitempty"`
-	TMPartition        string            `json:"tmPartition,omitempty"`
-	CustomizationType  CustomizationType `json:"customizationType,omitempty"`
 	CustomizationGroup string            `json:"customizationGroup"`
+	Type               WebtopType        `json:"webtopType,omitempty"`
+	CustomizationType  CustomizationType `json:"customizationType,omitempty"`
 	LocationSpecific   BooledString      `json:"locationSpecific"`
-	MinimizeToTray     BooledString      `json:"minimizeToTray"`         // Updateable
-	ShowSearch         BooledString      `json:"showSearch"`             // Updateable
-	WarningOnClose     BooledString      `json:"warningOnClose"`         // Updateable
-	UrlEntryField      BooledString      `json:"urlEntryField"`          // Updateable
-	ResourceSearch     BooledString      `json:"resourceSearch"`         // Updateable
-	InitialState       InitialState      `json:"initialState,omitempty"` // Updateable
+	MinimizeToTray     BooledString      `json:"minimizeToTray"`
+	ShowSearch         BooledString      `json:"showSearch"`
+	WarningOnClose     BooledString      `json:"warningOnClose"`
+	UrlEntryField      BooledString      `json:"urlEntryField"`
+	ResourceSearch     BooledString      `json:"resourceSearch"`
+	InitialState       InitialState      `json:"initialState,omitempty"`
+}
+
+// Only the values within WebtopConfig can be updated. Any changes made to non-config values will be ignored when using UpdateWebtop.
+type Webtop struct {
+	Name        string `json:"name,omitempty"`
+	Partition   string `json:"partition,omitempty"`
+	TMPartition string `json:"tmPartition,omitempty"`
+	WebtopConfig
 }
 
 type WebtopRead struct {

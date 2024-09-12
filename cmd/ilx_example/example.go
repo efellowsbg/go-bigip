@@ -23,7 +23,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	const wrkspcName = "exampleWorkspace"
+	const wrkspcName = "sdsss"
 	err := f5.CreateWorkspace(ctx, wrkspcName)
 	if err != nil {
 		panic(err)
@@ -42,10 +42,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = f5.UploadExtensionFiles(ctx, opts, "cmd/ilx_example/ilx")
+
+	err = f5.WriteExtensionFile(ctx, opts, "{", bigip.PackageJSON)
 	if err != nil {
 		panic(err)
 	}
+
+	err = f5.WriteExtensionFile(ctx, opts, "const a=1;", bigip.IndexJS)
+	if err != nil {
+		panic(err)
+	}
+
 	content, err := f5.ReadExtensionFiles(ctx, opts)
 	if err != nil {
 		panic(err)

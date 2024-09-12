@@ -98,6 +98,32 @@ func (b *BigIP) UploadExtensionFiles(ctx context.Context, opts ExtensionConfig, 
 	return nil
 }
 
+type ExtensionFile int64
+
+const (
+	PackageJSON ExtensionFile = iota
+	IndexJS
+)
+
+func (e ExtensionFile) String() string {
+	switch e {
+	case PackageJSON:
+		return "package.json"
+	case IndexJS:
+		return "index.js"
+	}
+	return "unknown"
+}
+
+func (b *BigIP) WriteExtensionFile(ctx context.Context, opts ExtensionConfig, content string, filename ExtensionFile) error {
+	destination := fmt.Sprintf("%s/%s/%s/extensions/%s/%s", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName, opts.Name, filename)
+	err := b.WriteFile(content, destination)
+	if err != nil {
+		return fmt.Errorf("error uploading packagejson: %w", err)
+	}
+	return nil
+}
+
 // Reads extension files for a specified ExtensionConfig. Ignores node_modules folder
 func (b *BigIP) ReadExtensionFiles(ctx context.Context, opts ExtensionConfig) ([]File, error) {
 	destination := fmt.Sprintf("%s/%s/%s/extensions/%s/", WORKSPACE_UPLOAD_PATH, opts.Partition, opts.WorkspaceName, opts.Name)

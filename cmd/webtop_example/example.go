@@ -23,13 +23,11 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	webtop := bigip.Webtop{
-		Name:               "Hey",
-		Partition:          "Common",
+
+	conf := bigip.WebtopConfig{
 		Description:        "Call me",
 		Type:               bigip.Full,
 		LinkType:           bigip.LinkTypeUri,
-		TMPartition:        "Common",
 		CustomizationType:  bigip.Modern,
 		CustomizationGroup: "/Common/webtop_customization",
 		LocationSpecific:   false,
@@ -39,6 +37,13 @@ func main() {
 		UrlEntryField:      true,
 		ResourceSearch:     false,
 	}
+	webtop := bigip.Webtop{
+		Name:         "ExampleName",
+		Partition:    "Common",
+		TMPartition:  "Common",
+		WebtopConfig: conf,
+	}
+
 	err := f5.CreateWebtop(ctx, webtop)
 	if err != nil {
 		log.Fatalf("Failed to create webtop: %v", err)
