@@ -22,38 +22,46 @@ const (
 	uriGtmmonitor = "monitor"
 	uriPoolA      = "pool/a"
 	uriWideIp     = "wideip"
+	uriTopology   = "topology"
+	uriRegion     = "region"
+	uriProberPool = "prober-pool"
 )
 
 type Datacenters struct {
 	Datacenters []GTMDatacenter `json:"items"`
 }
 
-type GTMWideIP struct {
-	Name                              string   `json:"name,omitempty"`
-	Partition                         string   `json:"partition,omitempty"`
-	FullPath                          string   `json:"fullPath,omitempty"`
-	Generation                        int      `json:"generation,omitempty"`
-	AppService                        string   `json:"appService,omitempty"`
-	Description                       string   `json:"description,omitempty"`
-	Disabled                          bool     `json:"disabled,omitempty"`
-	Enabled                           bool     `json:"enabled,omitempty"`
-	FailureRcode                      string   `json:"failureRcode,omitempty"`
-	FailureRcodeResponse              string   `json:"failureRcodeResponse,omitempty"`
-	FailureRcodeTTL                   int      `json:"failureRcodeTtl,omitempty"`
-	LastResortPool                    string   `json:"lastResortPool,omitempty"`
-	LoadBalancingDecisionLogVerbosity []string `json:"loadBalancingDecisionLogVerbosity,omitempty"`
-	MinimalResponse                   string   `json:"minimalResponse,omitempty"`
-	PersistCidrIpv4                   int      `json:"persistCidrIpv4,omitempty"`
-	PersistCidrIpv6                   int      `json:"persistCidrIpv6,omitempty"`
-	Persistence                       string   `json:"persistence,omitempty"`
-	PoolLbMode                        string   `json:"poolLbMode,omitempty"`
-	TopologyPreferEdns0ClientSubnet   string   `json:"topologyPreferEdns0ClientSubnet,omitempty"`
-	TTLPersistence                    int      `json:"ttlPersistence,omitempty"`
-	Aliases                           []string `json:"aliases,omitempty"`
+// GTMWideIPPool represents a pool associated with a GTM WideIP
+type GTMWideIPPool struct {
+	Name      string `json:"name,omitempty"`
+	Partition string `json:"partition,omitempty"`
+	Order     int    `json:"order"`
+	Ratio     int    `json:"ratio"`
+}
 
-	// Not in the spec, but returned by the API
-	// Setting this field atomically updates all members.
-	//Pools *[]GTMWideIPPool `json:"pools,omitempty"`
+type GTMWideIP struct {
+	Name                              string          `json:"name,omitempty"`
+	Partition                         string          `json:"partition,omitempty"`
+	FullPath                          string          `json:"fullPath,omitempty"`
+	Generation                        int             `json:"generation,omitempty"`
+	AppService                        string          `json:"appService,omitempty"`
+	Description                       string          `json:"description,omitempty"`
+	Disabled                          bool            `json:"disabled,omitempty"`
+	Enabled                           bool            `json:"enabled,omitempty"`
+	FailureRcode                      string          `json:"failureRcode,omitempty"`
+	FailureRcodeResponse              string          `json:"failureRcodeResponse,omitempty"`
+	FailureRcodeTTL                   int             `json:"failureRcodeTtl,omitempty"`
+	LastResortPool                    string          `json:"lastResortPool,omitempty"`
+	LoadBalancingDecisionLogVerbosity []string        `json:"loadBalancingDecisionLogVerbosity,omitempty"`
+	MinimalResponse                   string          `json:"minimalResponse,omitempty"`
+	PersistCidrIpv4                   int             `json:"persistCidrIpv4,omitempty"`
+	PersistCidrIpv6                   int             `json:"persistCidrIpv6,omitempty"`
+	Persistence                       string          `json:"persistence,omitempty"`
+	PoolLbMode                        string          `json:"poolLbMode,omitempty"`
+	TopologyPreferEdns0ClientSubnet   string          `json:"topologyPreferEdns0ClientSubnet,omitempty"`
+	TTLPersistence                    int             `json:"ttlPersistence,omitempty"`
+	Aliases                           []string        `json:"aliases,omitempty"`
+	Pools                             []GTMWideIPPool `json:"pools"`
 }
 
 // type Datacenter struct {
@@ -76,6 +84,7 @@ type GTMDatacenter struct {
 	Disabled         bool   `json:"disabled,omitempty"`
 	Location         string `json:"location,omitempty"`
 	ProberFallback   string `json:"proberFallback,omitempty"`
+	ProberPool       string `json:"proberPool,omitempty"`
 	ProberPreference string `json:"proberPreference,omitempty"`
 }
 
@@ -84,12 +93,43 @@ type Gtmmonitors struct {
 }
 
 type Gtmmonitor struct {
-	Name          string `json:"name,omitempty"`
-	Defaults_from string `json:"defaultsFrom,omitempty"`
-	Interval      int    `json:"interval,omitempty"`
-	Probe_timeout int    `json:"probeTimeout,omitempty"`
-	Recv          string `json:"recv,omitempty"`
-	Send          string `json:"send,omitempty"`
+	Name                 string `json:"name,omitempty"`
+	FullPath             string `json:"fullPath,omitempty"`
+	Partition            string `json:"partition,omitempty"`
+	Defaults_from        string `json:"defaultsFrom,omitempty"`
+	Destination          string `json:"destination,omitempty"`
+	Interval             int    `json:"interval,omitempty"`
+	Timeout              int    `json:"timeout,omitempty"`
+	Probe_timeout        int    `json:"probeTimeout,omitempty"`
+	Ignore_down_response string `json:"ignoreDownResponse,omitempty"`
+	Transparent          string `json:"transparent,omitempty"`
+	Reverse              string `json:"reverse,omitempty"`
+	Recv                 string `json:"recv,omitempty"`
+	Send                 string `json:"send,omitempty"`
+	// HTTPS-specific fields
+	Cert          string `json:"cert,omitempty"`
+	Key           string `json:"key,omitempty"`
+	Cipherlist    string `json:"cipherlist,omitempty"`
+	Compatibility string `json:"compatibility,omitempty"`
+	// SniServerName is a LOCAL PATCH: not present in the pinned upstream
+	// go-bigip commit (see go.mod/vendor/modules.txt), hand-added here to
+	// support bigip_gtm_monitor_https's sni_server_name attribute (see
+	// COREBIP-50067). This field corresponds to the real BIG-IP GTM HTTPS
+	// monitor's sniServerName API field (tmsh: sni-server-name), confirmed
+	// present via "tmsh help gtm monitor https" on a live 17.5.1 instance.
+	// Remove this comment (and verify the field/tag still match) once this
+	// is upstreamed to github.com/f5devcentral/go-bigip and the pinned
+	// commit is bumped to include it -- do not let a future blanket
+	// `go mod vendor` silently drop this field before that happens.
+	SniServerName string `json:"sniServerName,omitempty"`
+	// PostgreSQL-specific fields
+	Database string `json:"database,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Count    string `json:"count,omitempty"`
+	Debug    string `json:"debug,omitempty"`
+	// BIG-IP monitor-specific fields
+	Aggregate_dynamic_ratios string `json:"aggregateDynamicRatios,omitempty"`
 }
 
 type Servers struct {
@@ -473,34 +513,32 @@ type GtmPoolMembers struct {
 	Ratio                     int    `json:"ratio,omitempty"`
 }
 
-func (b *BigIP) Gtmmonitors() (*Gtmmonitor, error) {
-	var gtmmonitor Gtmmonitor
-	err, _ := b.getForEntity(&gtmmonitor, uriGtm, uriGtmmonitor, uriHttp)
+// CreateGtmMonitor creates a GTM monitor of the specified type
+func (b *BigIP) CreateGtmMonitor(monitor *Gtmmonitor, monitorType string) error {
+	return b.post(monitor, uriGtm, uriGtmmonitor, monitorType)
+}
 
+// GetGtmMonitor retrieves a GTM monitor of the specified type
+func (b *BigIP) GetGtmMonitor(name string, monitorType string) (*Gtmmonitor, error) {
+	var monitor Gtmmonitor
+	err, ok := b.getForEntity(&monitor, uriGtm, uriGtmmonitor, monitorType, name)
 	if err != nil {
 		return nil, err
 	}
-
-	return &gtmmonitor, nil
-}
-func (b *BigIP) CreateGtmmonitor(name, defaults_from string, interval, probeTimeout int, recv, send string) error {
-	config := &Gtmmonitor{
-		Name:          name,
-		Defaults_from: defaults_from,
-		Interval:      interval,
-		Probe_timeout: probeTimeout,
-		Recv:          recv,
-		Send:          send,
+	if !ok {
+		return nil, nil
 	}
-	return b.post(config, uriGtm, uriGtmmonitor, uriHttp)
+	return &monitor, nil
 }
 
-func (b *BigIP) ModifyGtmmonitor(*Gtmmonitor) error {
-	return b.patch(uriGtm, uriGtmmonitor, uriHttp)
+// ModifyGtmMonitor modifies a GTM monitor of the specified type
+func (b *BigIP) ModifyGtmMonitor(name string, monitor *Gtmmonitor, monitorType string) error {
+	return b.put(monitor, uriGtm, uriGtmmonitor, monitorType, name)
 }
 
-func (b *BigIP) DeleteGtmmonitor(name string) error {
-	return b.delete(uriGtm, uriGtmmonitor, uriHttp, name)
+// DeleteGtmMonitor deletes a GTM monitor of the specified type
+func (b *BigIP) DeleteGtmMonitor(name string, monitorType string) error {
+	return b.delete(uriGtm, uriGtmmonitor, monitorType, name)
 }
 
 func (b *BigIP) CreateGtmserver(p *Server) error {
@@ -717,6 +755,124 @@ func (b *BigIP) ModifyGTMDatacenter(fullPath string, config *GTMDatacenter) erro
 // DeleteGTMDatacenter removes a GTM datacenter
 func (b *BigIP) DeleteGTMDatacenter(fullPath string) error {
 	return b.delete(uriGtm, uriDatacenter, fullPath)
+}
+
+// GTMProberPool represents a GTM prober pool
+// (/mgmt/tm/gtm/prober-pool), referenced by GTMDatacenter.ProberPool when
+// ProberPreference is "pool".
+type GTMProberPool struct {
+	Name      string `json:"name,omitempty"`
+	Partition string `json:"partition,omitempty"`
+	FullPath  string `json:"fullPath,omitempty"`
+}
+
+// CreateGTMProberPool creates a new GTM prober pool
+func (b *BigIP) CreateGTMProberPool(config *GTMProberPool) error {
+	return b.post(config, uriGtm, uriProberPool)
+}
+
+// GetGTMProberPool retrieves a GTM prober pool by full path
+func (b *BigIP) GetGTMProberPool(fullPath string) (*GTMProberPool, error) {
+	var pp GTMProberPool
+	err, ok := b.getForEntity(&pp, uriGtm, uriProberPool, fullPath)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+	return &pp, nil
+}
+
+// DeleteGTMProberPool removes a GTM prober pool
+func (b *BigIP) DeleteGTMProberPool(fullPath string) error {
+	return b.delete(uriGtm, uriProberPool, fullPath)
+}
+
+// GTMTopologyRecord represents a GTM topology record
+type GTMTopologyRecord struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Order       int    `json:"order"`
+	Score       int    `json:"score"`
+}
+
+type GTMTopologyRecords struct {
+	Items []GTMTopologyRecord `json:"items"`
+}
+
+// GTMRegion represents a GTM topology region
+type GTMRegion struct {
+	Name       string            `json:"name,omitempty"`
+	Partition  string            `json:"partition,omitempty"`
+	FullPath   string            `json:"fullPath,omitempty"`
+	Generation int               `json:"generation,omitempty"`
+	Members    []GTMRegionMember `json:"regionMembers"`
+}
+
+type GTMRegions struct {
+	Items []GTMRegion `json:"items"`
+}
+
+// GTMRegionMember represents a member entry in a GTM region
+type GTMRegionMember struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateGTMTopologyRecord creates a new GTM topology record
+func (b *BigIP) CreateGTMTopologyRecord(config *GTMTopologyRecord) error {
+	return b.post(config, uriGtm, uriTopology)
+}
+
+// GetGTMTopologyRecord retrieves a GTM topology record by its description
+func (b *BigIP) GetGTMTopologyRecord(description string) (*GTMTopologyRecord, error) {
+	var record GTMTopologyRecord
+	err, ok := b.getForEntity(&record, uriGtm, uriTopology, description)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+	return &record, nil
+}
+
+// ModifyGTMTopologyRecord updates a GTM topology record
+func (b *BigIP) ModifyGTMTopologyRecord(description string, config *GTMTopologyRecord) error {
+	return b.put(config, uriGtm, uriTopology, description)
+}
+
+// DeleteGTMTopologyRecord removes a GTM topology record
+func (b *BigIP) DeleteGTMTopologyRecord(description string) error {
+	return b.delete(uriGtm, uriTopology, description)
+}
+
+// CreateGTMRegion creates a new GTM topology region
+func (b *BigIP) CreateGTMRegion(config *GTMRegion) error {
+	return b.post(config, uriGtm, uriRegion)
+}
+
+// GetGTMRegion retrieves a GTM topology region by full path
+func (b *BigIP) GetGTMRegion(fullPath string) (*GTMRegion, error) {
+	var region GTMRegion
+	err, ok := b.getForEntity(&region, uriGtm, uriRegion, fullPath)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+	return &region, nil
+}
+
+// ModifyGTMRegion updates a GTM topology region
+func (b *BigIP) ModifyGTMRegion(fullPath string, config *GTMRegion) error {
+	return b.put(config, uriGtm, uriRegion, fullPath)
+}
+
+// DeleteGTMRegion removes a GTM topology region
+func (b *BigIP) DeleteGTMRegion(fullPath string) error {
+	return b.delete(uriGtm, uriRegion, fullPath)
 }
 
 // func (b *BigIP) GetDatacenters() (*GTMDatacenter, error) {
